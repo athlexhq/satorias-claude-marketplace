@@ -39,14 +39,20 @@ if git rev-parse --abbrev-ref @{u} >/dev/null 2>&1; then
 else
   echo "unpushed commits: NO UPSTREAM - branch was never pushed"
 fi
+if git rev-parse --verify --quiet "$BASE" >/dev/null; then
+  BASE_REF="$BASE"
+else
+  BASE_REF="origin/$BASE"
+fi
+echo "base ref for diff/log: $BASE_REF"
 echo "--- pull request ---"
 gh pr view --json number,title,state,isDraft,url \
   -q '"#\(.number) [\(.state)\(if .isDraft then ", draft" else "" end)] \(.title)\n\(.url)"' \
   2>&1
 echo "--- commits on this branch ---"
-git log "$BASE"..HEAD --oneline --no-merges
-echo "--- files changed vs $BASE ---"
-git diff "$BASE"...HEAD --stat
+git log "$BASE_REF"..HEAD --oneline --no-merges
+echo "--- files changed vs $BASE_REF ---"
+git diff "$BASE_REF"...HEAD --stat
 ```
 
 # Step 2 - abort conditions
@@ -77,19 +83,20 @@ the difference between it and the real diff is the thing being corrected.
 Base the description on the code, not on the commit subjects. Commit subjects
 are often branch names and too terse to describe intent on their own.
 
- - read the full diff with `git diff <base>...HEAD`
- - for a large branch, work from `git diff <base>...HEAD --stat` first, then
-   read the files that carry the real change
+ - read the full diff with `git diff <base-ref>...HEAD`
+ - for a large branch, work from `git diff <base-ref>...HEAD --stat` first,
+   then read the files that carry the real change
  - group the work into semantical tasks, one numbered item per task, in the
    order a reviewer would want to read them
 
-Substitute `<base>` with the default branch reported in Step 1. Each Bash call
-starts a fresh shell, so the `$BASE` variable from that block is not available
-here — write the branch name out.
+Substitute `<base-ref>` with the base ref reported in Step 1 (`base ref for
+diff/log`) — usually the default branch name, but `origin/<branch>` if no
+local branch for it exists. Each Bash call starts a fresh shell, so the
+`$BASE_REF` variable from that block is not available here — write it out.
 
-Use three dots. `<base>...HEAD` diffs against the merge base, so it shows only
-this branch's work rather than everything that landed on the default branch
-meanwhile.
+Use three dots. `<base-ref>...HEAD` diffs against the merge base, so it shows
+only this branch's work rather than everything that landed on the default
+branch meanwhile.
 
 # Step 5 - write the new description
 Follow the `create-github-pr` skill for the structure. Every numbered item in

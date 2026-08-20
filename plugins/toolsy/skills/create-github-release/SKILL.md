@@ -76,7 +76,7 @@ Stop, report to the user, and change nothing if any of these hold.
    on origin
  - the changelog commit is not HEAD — report which commits landed after it and
    stop
- - a tag for this version already exists
+ - a tag or release for this version already exists (checked in Step 3)
 
 Never work around an abort condition. Report it and let the user decide.
 
@@ -85,8 +85,12 @@ Read these from the Step 1 output.
 
  - version — the number in the header, so `# [6.6.9] - 28-07-2026` gives
    `6.6.9`
- - tag name — the version, unprefixed
- - release title — the version with a `v` in front
+ - tag name — apply the Conventions above. By default the tag is bare
+   (`6.6.9`). If the "most recent tags" list in Step 1 shows the repo already
+   uses a `v` prefix on tags, the tag name is `v6.6.9` instead.
+ - release title — `v6.6.9`. If the tag name you just derived already carries
+   the `v` (because the repo uses that convention), the title equals the tag
+   name exactly — do not add a second `v`.
  - release body — the section with its `# [...]` header line removed, and the
    trailing blank line that separates it from the next entry stripped
 
@@ -94,13 +98,13 @@ Check that the date in the header is today's date. If it is older, the entry
 was written on an earlier day; tell the user and confirm the release is still
 the intended one before continuing.
 
-Once you have the version, confirm neither the tag nor the release already
+Once you have the tag name, confirm neither the tag nor the release already
 exists — do not rely on the "most recent tags" list alone, since the version
 you need may not be recent.
 
 ```bash
-git rev-parse --verify --quiet "refs/tags/<version>" >/dev/null && echo "TAG EXISTS - stop here"
-gh release view "<version>" >/dev/null 2>&1 && echo "RELEASE EXISTS - stop here"
+git rev-parse --verify --quiet "refs/tags/<tag>" >/dev/null && echo "TAG EXISTS - stop here"
+gh release view "<tag>" >/dev/null 2>&1 && echo "RELEASE EXISTS - stop here"
 ```
 
 # Step 4 - confirm before changing anything
@@ -109,19 +113,20 @@ tag and publish a release, both of which are awkward to undo. Show the user,
 and wait for explicit confirmation:
 
  - the commit to be tagged, as sha and subject
- - the tag name
- - the release title
+ - the tag name derived in Step 3
+ - the release title derived in Step 3
  - the full release body
 
 # Step 5 - execute
 After confirmation, write the body to a temporary file and pass it with
 `--notes-file`, so the multi-line markdown survives intact. Do not inline it
-with `--notes`.
+with `--notes`. Use the exact tag name and title derived in Step 3 — do not
+reconstruct them here.
 
 ```
-git tag <version> <changelog-commit-sha>
-git push origin <version>
-gh release create <version> --title "v<version>" --notes-file <path>
+git tag <tag> <changelog-commit-sha>
+git push origin <tag>
+gh release create <tag> --title "<title>" --notes-file <path>
 ```
 
 # Step 6 - report

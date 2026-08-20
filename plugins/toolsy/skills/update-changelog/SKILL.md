@@ -5,7 +5,7 @@ description: >-
   commits made
   since the last release tag. Use when cutting a release. Not for feature
   branches or individual PRs.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git describe:*), Bash(git show:*), Bash(git fetch:*), Bash(git rev-list:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(sed:*), Bash(grep:*), Read, Edit
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git describe:*), Bash(git show:*), Bash(git fetch:*), Bash(git rev-list:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(sed:*), Bash(grep:*), Read, Edit
 user-invocable: true
 ---
 
@@ -32,7 +32,11 @@ if [ "$BRANCH" != "$BASE" ]; then
 else
   echo "clean tree: $([ -z "$(git status --porcelain)" ] && echo yes || echo no)"
   git fetch --tags --quiet
-  echo "behind origin/$BASE: $(git rev-list --count "HEAD..origin/$BASE")"
+  if git rev-parse --verify --quiet "origin/$BASE" >/dev/null; then
+    echo "behind origin/$BASE: $(git rev-list --count "HEAD..origin/$BASE")"
+  else
+    echo "behind origin/$BASE: UNKNOWN - origin/$BASE not found, fetch or check the remote"
+  fi
   TAG=$(git describe --tags --abbrev=0 2>/dev/null)
   if [ -z "$TAG" ]; then
     echo "last tag: none (no prior release)"
@@ -57,13 +61,13 @@ Stop, report to the user, and change nothing if any of these hold. The block
 above only reads state — it will not fix them for you.
 
  - the branch is not the default branch reported in Step 1
- - CHANGELOG.md does not exist
+ - CHANGELOG.md does not exist, or `origin/$BASE` could not be found
  - the tree is not clean — the uncommitted work would land in the changelog
    commit
  - the branch is behind its origin counterpart — ask the user to pull first,
    otherwise the entry misses commits that are already released
 
-# Source of the entries
+# Step 3 - source of the entries
 Write the entries from the commit messages listed above — the commits made
 since the last release tag. Each commit is one semantical task; map it to a
 category below.
@@ -84,10 +88,13 @@ number — `add/integration/webhook-retries (#1481)` — is read with
 `gh pr view 1481`. If the repo merges a different way and no PR number is
 present, fall back to `git show --stat <sha>` for that commit.
 
-# Categories
+# Step 4 - categories
 There are six main categories. Every PR can contain one, or more, semantical
 tasks that can be put in one of the categories.
-Each task needs to be expressed succinctly and must fit on one line.
+Each task's top-level bullet needs to be expressed succinctly and must fit on
+one line. A task with several distinct parts may carry indented sub-bullets
+underneath it, as in the worked example below — the one-line rule applies to
+each individual line, not to the task as a whole.
 
  - Security (patching vulnerabilities, upgrading security packages, etc.)
  - System (dependency upgrades, or changes in deployment, devops, etc.)
@@ -96,7 +103,7 @@ Each task needs to be expressed succinctly and must fit on one line.
  - Remove
  - Change
 
-# Release Header
+# Step 5 - release header
 Every run of this skill writes exactly one new versioned header, since the
 skill only runs when a release is being cut. Header must contain:
  - write version inside the square brackets
@@ -117,7 +124,7 @@ A minor bump marks a deliberate milestone that accumulates a lot of work. A
 major bump is never implied by the commits. Propose either only when the user
 has said a release is one of those, and confirm before writing the header.
 
-# The Format
+# Step 6 - the format
 The new entry goes above the most recent released version and below the
 template block at the top of the file.
 
@@ -149,7 +156,9 @@ the rest, but never reorder the ones you do include.
 >  - ...
 
 And this is an example of the actual entry. The entry lines are deliberately
-left unwrapped, because each task must fit on a single line.
+left unwrapped, because each bullet line must fit on a single line — note the
+`## Add` task's sub-bullets, used because that task has several distinct
+parts.
 > # [6.6.0] - 15-06-2026
 > ## Security
 >  - bump rack from 3.1.2 to 3.1.5 to patch CVE-2026-1234
@@ -173,7 +182,7 @@ left unwrapped, because each task must fit on a single line.
 If you are unsure about the task category read the CHANGELOG.md and make a
 decision from how they were placed historically in that file.
 
-# Confirm before changing anything
+# Step 7 - confirm before changing anything
 Everything above is read-only. Show the user the full entry as it will be
 written — header, categories, and tasks — and wait for explicit confirmation
 before editing CHANGELOG.md.
