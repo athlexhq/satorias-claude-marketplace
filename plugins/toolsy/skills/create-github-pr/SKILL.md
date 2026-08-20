@@ -4,7 +4,7 @@ description: >-
   Open a new pull request for the current branch, with a title and
   description built from its diff against the default branch. Use after
   pushing a branch that has no pull request yet.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(gh pr create:*), Read, Write
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(gh pr create:*), Bash(sed:*), Bash(wc:*), Bash(tr:*), Read, Write
 user-invocable: true
 ---
 
@@ -24,7 +24,11 @@ if [ -z "$BASE" ]; then BASE=main; echo "could not detect default branch, fallin
 echo "default branch: $BASE"
 BRANCH=$(git branch --show-current)
 echo "branch: $BRANCH"
-if [ "$BRANCH" = "$BASE" ]; then echo "ON THE DEFAULT BRANCH - stop here."; fi
+if [ -z "$BRANCH" ]; then
+  echo "DETACHED HEAD - stop here."
+elif [ "$BRANCH" = "$BASE" ]; then
+  echo "ON THE DEFAULT BRANCH - stop here."
+fi
 echo "uncommitted changes: $([ -z "$(git status --porcelain)" ] && echo no || echo yes)"
 if git rev-parse --abbrev-ref @{u} >/dev/null 2>&1; then
   echo "unpushed commits: $(git log @{u}..HEAD --oneline | wc -l | tr -d ' ')"
@@ -42,7 +46,8 @@ git diff "$BASE"...HEAD --stat
 # Step 2 - abort conditions
 Stop, report to the user, and change nothing if any of these hold.
 
- - the branch is the default branch reported in Step 1
+ - the branch is detached HEAD (no current branch) or is the default branch
+   reported in Step 1
  - the branch has no upstream — it was never pushed, so there is nothing to
    open a pull request from
  - there are unpushed commits — push them first, otherwise the pull request
@@ -79,12 +84,12 @@ Each title consists of three parts:
 
 ## Action
 When writing a title start with one of the following tags:
+ - security (vulnerability patches, security-driven dependency upgrades)
  - system
  - fix
  - add
  - remove
  - change
- - security (vulnerability patches, security-driven dependency upgrades)
 Then use forward slash as a separator ('/').
 
 ## Tag
@@ -161,3 +166,8 @@ gh pr create --base <base> --head <branch> --title "<title>" --body-file <path>
 
 # Step 6 - report
 Print the pull request URL that `gh pr create` returns.
+
+# Next step
+If new commits land on this branch before the pull request is merged, use the
+`update-github-pr` skill to refresh the description rather than editing it by
+hand.

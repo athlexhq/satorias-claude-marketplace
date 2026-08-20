@@ -5,7 +5,7 @@ description: >-
   the matching
   GitHub release using the changelog section as its body. Run right after
   update-changelog. Not for feature branches or individual PRs.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git fetch:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(git rev-parse:*), Bash(gh release view:*), Bash(git tag:*), Bash(git push:*), Bash(gh release create:*), Read, Write
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git fetch:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(git rev-parse:*), Bash(gh release view:*), Bash(git tag:*), Bash(git push:*), Bash(gh release create:*), Bash(sed:*), Bash(wc:*), Bash(tr:*), Bash(awk:*), Bash(head:*), Write
 user-invocable: true
 ---
 
@@ -43,11 +43,19 @@ echo "default branch: $BASE"
 if [ "$BRANCH" != "$BASE" ]; then echo "NOT ON THE DEFAULT BRANCH - stop here."; fi
 git fetch --tags --quiet
 echo "clean tree: $([ -z "$(git status --porcelain)" ] && echo yes || echo no)"
-echo "unpushed commits: $(git log "origin/$BASE..HEAD" --oneline | wc -l | tr -d ' ')"
+if git rev-parse --verify --quiet "origin/$BASE" >/dev/null; then
+  echo "unpushed commits: $(git log "origin/$BASE..HEAD" --oneline | wc -l | tr -d ' ')"
+else
+  echo "unpushed commits: UNKNOWN - origin/$BASE not found, fetch or check the remote"
+fi
 echo "changelog commit: $(git log -1 --format='%h %s' -- CHANGELOG.md)"
 echo "HEAD:             $(git log -1 --format='%h %s')"
-echo "--- newest changelog section ---"
-awk '/^# \[[0-9]+\.[0-9]+\.[0-9]+\]/{if(n++)exit; print; next} n{print}' CHANGELOG.md
+if [ -f CHANGELOG.md ]; then
+  echo "--- newest changelog section ---"
+  awk '/^# \[[0-9]+\.[0-9]+\.[0-9]+\]/{if(n++)exit; print; next} n{print}' CHANGELOG.md
+else
+  echo "CHANGELOG.md: NOT FOUND - stop here"
+fi
 echo "--- most recent tags ---"
 git tag --sort=-v:refname | head -3
 ```
@@ -62,6 +70,7 @@ first entry it finds is already the one you want.
 Stop, report to the user, and change nothing if any of these hold.
 
  - the branch is not the default branch
+ - CHANGELOG.md does not exist, or `origin/$BASE` could not be found
  - the working tree is not clean
  - there are unpushed commits — the tag must point at a commit that is already
    on origin
@@ -95,15 +104,14 @@ gh release view "<version>" >/dev/null 2>&1 && echo "RELEASE EXISTS - stop here"
 ```
 
 # Step 4 - confirm before changing anything
-Show the user, and wait for explicit confirmation:
+Everything above is read-only. The commands in Step 5 are not — they push a
+tag and publish a release, both of which are awkward to undo. Show the user,
+and wait for explicit confirmation:
 
  - the commit to be tagged, as sha and subject
  - the tag name
  - the release title
  - the full release body
-
-Everything up to this point is read-only. The commands below are not — they
-push a tag and publish a release, both of which are awkward to undo.
 
 # Step 5 - execute
 After confirmation, write the body to a temporary file and pass it with

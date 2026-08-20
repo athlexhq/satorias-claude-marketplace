@@ -5,7 +5,7 @@ description: >-
   commits made
   since the last release tag. Use when cutting a release. Not for feature
   branches or individual PRs.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git describe:*), Bash(git show:*), Bash(git fetch:*), Bash(git rev-list:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Read, Edit
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git describe:*), Bash(git show:*), Bash(git fetch:*), Bash(git rev-list:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(sed:*), Bash(grep:*), Read, Edit
 user-invocable: true
 ---
 
@@ -13,10 +13,11 @@ user-invocable: true
 The format is based on [Keep a Changelog](http://keepachangelog.com/),
 and the project adheres to [Semantic Versioning](http://semver.org/).
 
-# Prerequisite
 The changelog is only ever updated on the repo's default branch, never on a
-feature branch.
+feature branch, and only from commits that have already landed there — run
+this after the relevant pull requests are merged, not before.
 
+# Step 1 - gather state
 Run this block with Bash before doing anything else.
 
 ```bash
@@ -42,17 +43,21 @@ else
     echo "--- commits since $TAG ---"
     git log "$TAG"..HEAD --oneline --no-merges
   fi
-  echo "--- versions already in CHANGELOG.md ---"
-  grep -m 5 -E '^# \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md
+  if [ -f CHANGELOG.md ]; then
+    echo "--- versions already in CHANGELOG.md ---"
+    grep -m 5 -E '^# \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md
+  else
+    echo "CHANGELOG.md: NOT FOUND - stop here, ask the user how to proceed"
+  fi
 fi
 ```
 
-If the output says NOT ON THE DEFAULT BRANCH, stop and tell the user the
-changelog is updated on the default branch only. Do not edit CHANGELOG.md.
+# Step 2 - abort conditions
+Stop, report to the user, and change nothing if any of these hold. The block
+above only reads state — it will not fix them for you.
 
-Stop as well, and change nothing, if either of these holds. The block only
-reads state — it will not fix them for you.
-
+ - the branch is not the default branch reported in Step 1
+ - CHANGELOG.md does not exist
  - the tree is not clean — the uncommitted work would land in the changelog
    commit
  - the branch is behind its origin counterpart — ask the user to pull first,
@@ -120,8 +125,10 @@ The template block is a permanent fixture of the file, not an entry to fill in.
 Leave it in place, untouched, and write the new versioned entry below it. Never
 delete it.
 
-This is the template, showing all categories. Only include the categories that
-the commits since the last tag actually produced — omit the rest.
+This is the template, showing all categories in the order they must always
+appear: Security, System, Fix, Add, Remove, Change. Only include the
+categories that the commits since the last tag actually produced, omitting
+the rest, but never reorder the ones you do include.
 > # [6.x.x] - xx-07-2026
 > ## Security
 >  - ...
@@ -144,6 +151,14 @@ the commits since the last tag actually produced — omit the rest.
 And this is an example of the actual entry. The entry lines are deliberately
 left unwrapped, because each task must fit on a single line.
 > # [6.6.0] - 15-06-2026
+> ## Security
+>  - bump rack from 3.1.2 to 3.1.5 to patch CVE-2026-1234
+> 
+> ## System
+>  - fix `bin/bundle exec rails console` pry issue
+>  - locally install extensions for stringio, io-console, and date gems
+>  - bump binding_of_caller gem
+> 
 > ## Add
 >  - expand the export feature:
 >   - support CSV in addition to JSON
@@ -154,14 +169,6 @@ left unwrapped, because each task must fit on a single line.
 > 
 > ## Change
 >  - billing: use the invoice date instead of the payment date when computing usage totals
-> 
-> ## Security
->  - bump rack from 3.1.2 to 3.1.5 to patch CVE-2026-1234
-> 
-> ## System
->  - fix `bin/bundle exec rails console` pry issue
->  - locally install extensions for stringio, io-console, and date gems
->  - bump binding_of_caller gem
 
 If you are unsure about the task category read the CHANGELOG.md and make a
 decision from how they were placed historically in that file.

@@ -4,7 +4,7 @@ description: >-
   Rewrite the description of the pull request open for the current branch, so
   it matches the code that has been written since the PR was created. Use after
   pushing new commits to a branch that already has a PR.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(gh pr edit:*), Read, Write
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(sed:*), Bash(wc:*), Bash(tr:*), Read, Write
 user-invocable: true
 ---
 
@@ -28,7 +28,11 @@ if [ -z "$BASE" ]; then BASE=main; echo "could not detect default branch, fallin
 echo "default branch: $BASE"
 BRANCH=$(git branch --show-current)
 echo "branch: $BRANCH"
-if [ "$BRANCH" = "$BASE" ]; then echo "ON THE DEFAULT BRANCH - stop here."; fi
+if [ -z "$BRANCH" ]; then
+  echo "DETACHED HEAD - stop here."
+elif [ "$BRANCH" = "$BASE" ]; then
+  echo "ON THE DEFAULT BRANCH - stop here."
+fi
 echo "uncommitted changes: $([ -z "$(git status --porcelain)" ] && echo no || echo yes)"
 if git rev-parse --abbrev-ref @{u} >/dev/null 2>&1; then
   echo "unpushed commits: $(git log @{u}..HEAD --oneline | wc -l | tr -d ' ')"
@@ -48,7 +52,8 @@ git diff "$BASE"...HEAD --stat
 # Step 2 - abort conditions
 Stop, report to the user, and change nothing if any of these hold.
 
- - the branch is the default branch reported in Step 1
+ - the branch is detached HEAD (no current branch) or is the default branch
+   reported in Step 1
  - no pull request exists for the branch — tell the user to create one first
  - the pull request is closed or merged
  - the branch has no upstream — it was never pushed, so nothing on it has
@@ -127,3 +132,8 @@ Run the second command only if the user approved a title change.
 
 # Step 9 - report
 Print the pull request URL.
+
+# Next step
+Once the pull request is reviewed and merged into the default branch — outside
+the scope of this skill — continue the release workflow with the
+`update-changelog` skill.
