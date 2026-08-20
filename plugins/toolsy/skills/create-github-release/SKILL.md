@@ -18,7 +18,9 @@ Run it only after the changelog entry has been committed and pushed to the
 default branch.
 
 # Conventions
-These are fixed by the repository's release history. Do not deviate from them.
+These are the defaults. Check the most recent tags first (Step 1 lists the
+last three) — if the repo already releases under a different scheme, notably
+a `v` prefix on tags, match that instead of the defaults below.
 
  - the git tag is bare semver with no `v` prefix — `6.6.9`, not `v6.6.9`
  - the tag is lightweight — `git tag 6.6.9`, never `git tag -a`
@@ -36,7 +38,7 @@ BRANCH=$(git branch --show-current)
 echo "branch: $BRANCH"
 BASE=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
 [ -z "$BASE" ] && BASE=$(git remote show origin 2>/dev/null | sed -n 's/.*HEAD branch: //p')
-[ -z "$BASE" ] && BASE=master
+if [ -z "$BASE" ]; then BASE=main; echo "could not detect default branch, falling back to: $BASE"; fi
 echo "default branch: $BASE"
 if [ "$BRANCH" != "$BASE" ]; then echo "NOT ON THE DEFAULT BRANCH - stop here."; fi
 git fetch --tags --quiet
@@ -50,9 +52,11 @@ echo "--- most recent tags ---"
 git tag --sort=-v:refname | head -3
 ```
 
-The `awk` expression skips the permanent `# [6.x.x] - xx-07-2026` template
-block, because `x` is not a digit, and captures only the newest real versioned
-entry.
+Some CHANGELOG.md files keep a permanent, unfilled template block at the top
+(e.g. `# [6.x.x] - xx-07-2026`) as a fixture for the next entry. The `awk`
+expression skips it, if present, because `x` is not a digit, and captures
+only the newest real versioned entry. If the file has no such block, the
+first entry it finds is already the one you want.
 
 # Step 2 - abort conditions
 Stop, report to the user, and change nothing if any of these hold.

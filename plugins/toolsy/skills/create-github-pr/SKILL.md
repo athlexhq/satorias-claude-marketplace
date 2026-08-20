@@ -1,17 +1,10 @@
 ---
 name: create-github-pr
 description: >-
-  Title format and description structure required for pull requests in the
-  inbound-sync repo. Use when writing a PR there, whether with gh pr create or
-  by hand. These conventions are specific to that repo — do not apply them to
-  pull requests in any other repo.
+  Title format and description structure for pull requests. Use when writing
+  a PR, whether with gh pr create or by hand.
 user-invocable: true
 ---
-
-# Scope
-These rules describe the inbound-sync repo's conventions, not general PR
-practice. If the current repo is not inbound-sync, stop and write the pull
-request however that repo does it.
 
 # Title
 Each title consists of three parts:
@@ -26,11 +19,12 @@ When writing a title start with one of the following tags:
  - add
  - remove
  - change
+ - security (vulnerability patches, security-driven dependency upgrades)
 Then use forward slash as a separator ('/').
 
 ## Tag
 After that use any of the other tags:
- - integration (when work is done specifically for a PMS integration)
+ - integration (when work is done for a specific third-party integration)
  - devops (when work is within the DevOps domain)
  - feature
  - patch
@@ -43,8 +37,9 @@ Task can contain five words at most.
 Separate each word with the dash ('-').
 
 ## Examples
-When writing new PMS integration - 'add/integration/greystar'.
+When writing a new integration - 'add/integration/stripe-webhooks'.
 When writing a hotfix - 'fix/patch/strip-email'.
+When patching a vulnerability - 'security/patch/bump-rack-cve-2026-1234'.
 
 
 # Description
