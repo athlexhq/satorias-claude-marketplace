@@ -1,10 +1,75 @@
 ---
 name: create-github-pr
 description: >-
-  Title format and description structure for pull requests. Use when writing
-  a PR, whether with gh pr create or by hand.
+  Open a new pull request for the current branch, with a title and
+  description built from its diff against the default branch. Use after
+  pushing a branch that has no pull request yet.
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(gh pr create:*), Read, Write
 user-invocable: true
 ---
+
+# About
+This skill creates a pull request from the current branch's diff against the
+repo's default branch. To edit the description of a pull request that
+already exists, use the `update-github-pr` skill in this plugin instead.
+
+# Step 1 - gather state
+Run this block with Bash before doing anything else. Every later step reads
+its output.
+
+```bash
+BASE=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's@^origin/@@')
+[ -z "$BASE" ] && BASE=$(git remote show origin 2>/dev/null | sed -n 's/.*HEAD branch: //p')
+if [ -z "$BASE" ]; then BASE=main; echo "could not detect default branch, falling back to: $BASE"; fi
+echo "default branch: $BASE"
+BRANCH=$(git branch --show-current)
+echo "branch: $BRANCH"
+if [ "$BRANCH" = "$BASE" ]; then echo "ON THE DEFAULT BRANCH - stop here."; fi
+echo "uncommitted changes: $([ -z "$(git status --porcelain)" ] && echo no || echo yes)"
+if git rev-parse --abbrev-ref @{u} >/dev/null 2>&1; then
+  echo "unpushed commits: $(git log @{u}..HEAD --oneline | wc -l | tr -d ' ')"
+else
+  echo "unpushed commits: NO UPSTREAM - branch was never pushed"
+fi
+echo "--- existing pull request for this branch ---"
+gh pr view --json number,url -q '"#\(.number) \(.url)"' 2>&1
+echo "--- commits on this branch ---"
+git log "$BASE"..HEAD --oneline --no-merges
+echo "--- files changed vs $BASE ---"
+git diff "$BASE"...HEAD --stat
+```
+
+# Step 2 - abort conditions
+Stop, report to the user, and change nothing if any of these hold.
+
+ - the branch is the default branch reported in Step 1
+ - the branch has no upstream — it was never pushed, so there is nothing to
+   open a pull request from
+ - there are unpushed commits — push them first, otherwise the pull request
+   would not reflect the latest code
+ - a pull request already exists for this branch — tell the user to use the
+   `update-github-pr` skill instead
+ - there are uncommitted changes — warn the user, since that work will not be
+   on the pull request, and let them decide whether to continue
+
+# Step 3 - work out what the branch does
+Base the title and description on the code, not on the commit subjects.
+Commit subjects are often branch names and too terse to describe intent on
+their own.
+
+ - read the full diff with `git diff <base>...HEAD`
+ - for a large branch, work from `git diff <base>...HEAD --stat` first, then
+   read the files that carry the real change
+ - group the work into semantical tasks, one numbered item per task, in the
+   order a reviewer would want to read them
+
+Substitute `<base>` with the default branch reported in Step 1. Each Bash call
+starts a fresh shell, so the `$BASE` variable from that block is not available
+here — write the branch name out.
+
+Use three dots. `<base>...HEAD` diffs against the merge base, so it shows only
+this branch's work rather than everything that landed on the default branch
+meanwhile.
 
 # Title
 Each title consists of three parts:
@@ -77,3 +142,22 @@ This is an example.
 
 If the Pull Request is larger in size (10+ files added/edited) add a general
 description before the two sections.
+
+# Step 4 - confirm before changing anything
+Everything above is read-only. Show the user, and wait for explicit
+confirmation:
+
+ - the base and head branches
+ - the proposed title
+ - the full description
+
+# Step 5 - execute
+Write the body to a temporary file and pass it with `--body-file`, so the
+multi-line markdown survives intact. Do not inline it with `--body`.
+
+```
+gh pr create --base <base> --head <branch> --title "<title>" --body-file <path>
+```
+
+# Step 6 - report
+Print the pull request URL that `gh pr create` returns.
