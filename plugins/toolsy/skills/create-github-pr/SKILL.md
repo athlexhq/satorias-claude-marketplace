@@ -75,11 +75,12 @@ their own.
    order a reviewer would want to read them
 
 Substitute `<base-ref>` with the base ref reported in Step 1 (`base ref for
-diff/log`) — usually the default branch name, but `origin/<branch>` if no
-local branch for it exists. This is distinct from `<base>` in Step 5, which is
-always the plain branch name GitHub expects. Each Bash call starts a fresh
-shell, so the `$BASE_REF` variable from that block is not available here —
-write it out.
+diff/log`) — usually the default branch name, but `origin/<default-branch>`
+if no local branch for it exists. This is distinct from `<base>` in Step 5,
+which is always the plain default-branch name GitHub expects, and from
+`<branch>` in Step 5, which is the current/head branch. Each Bash call starts
+a fresh shell, so the `$BASE_REF` variable from that block is not available
+here — write it out.
 
 Use three dots. `<base-ref>...HEAD` diffs against the merge base, so it shows
 only this branch's work rather than everything that landed on the default

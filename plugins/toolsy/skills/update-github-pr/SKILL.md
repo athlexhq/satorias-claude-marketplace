@@ -90,9 +90,11 @@ are often branch names and too terse to describe intent on their own.
    order a reviewer would want to read them
 
 Substitute `<base-ref>` with the base ref reported in Step 1 (`base ref for
-diff/log`) — usually the default branch name, but `origin/<branch>` if no
-local branch for it exists. Each Bash call starts a fresh shell, so the
-`$BASE_REF` variable from that block is not available here — write it out.
+diff/log`) — usually the default branch name, but `origin/<default-branch>`
+if no local branch for it exists. Do not confuse this with the *current*
+branch reported in the same Step 1 block. Each Bash call starts a fresh
+shell, so the `$BASE_REF` variable from that block is not available here —
+write it out.
 
 Use three dots. `<base-ref>...HEAD` diffs against the merge base, so it shows
 only this branch's work rather than everything that landed on the default

@@ -74,7 +74,7 @@ category below.
 
 If the repo's commits follow the `create-github-pr` skill's `action/tag/task`
 title format, the action tag maps directly to a category — e.g.
-`system/update/bump-postcss-from-8.5.15-to-8.5.24` is a System entry, and
+`system/patch/bump-postcss-to-8.5.24` is a System entry, and
 `security/patch/bump-rack-cve-2026-1234` is a Security entry. Rewrite them as
 readable prose, do not paste the raw branch name.
 
