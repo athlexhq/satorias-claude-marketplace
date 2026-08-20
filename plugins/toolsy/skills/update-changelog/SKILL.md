@@ -123,6 +123,9 @@ delete it.
 This is the template, showing all categories. Only include the categories that
 the commits since the last tag actually produced — omit the rest.
 > # [6.x.x] - xx-07-2026
+> ## Security
+>  - ...
+> 
 > ## System
 >  - ...
 > 
