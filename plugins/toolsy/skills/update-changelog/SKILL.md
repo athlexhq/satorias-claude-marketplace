@@ -74,12 +74,13 @@ content instead, falling back to the PR/diff as described below.
 
 Commit subjects are branch names and are often too terse to describe the change
 well. When a subject does not carry enough meaning, read the pull request
-instead — squashed subjects end with the PR number, so
-`add/integration/webhook-retries (#1481)` is read with `gh pr view 1481`.
-Fall back to `git show --stat <sha>` for commits with no PR number.
+instead. This assumes PRs are squash-merged, so a subject ending in a PR
+number — `add/integration/webhook-retries (#1481)` — is read with
+`gh pr view 1481`. If the repo merges a different way and no PR number is
+present, fall back to `git show --stat <sha>` for that commit.
 
 # Categories
-There are five main categories. Every PR can contain one, or more, semantical
+There are six main categories. Every PR can contain one, or more, semantical
 tasks that can be put in one of the categories.
 Each task needs to be expressed succinctly and must fit on one line.
 
@@ -161,6 +162,11 @@ left unwrapped, because each task must fit on a single line.
 
 If you are unsure about the task category read the CHANGELOG.md and make a
 decision from how they were placed historically in that file.
+
+# Confirm before changing anything
+Everything above is read-only. Show the user the full entry as it will be
+written — header, categories, and tasks — and wait for explicit confirmation
+before editing CHANGELOG.md.
 
 # Next step
 This skill only edits CHANGELOG.md — it does not commit or push. Before

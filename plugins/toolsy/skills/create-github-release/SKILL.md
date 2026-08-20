@@ -5,7 +5,7 @@ description: >-
   the matching
   GitHub release using the changelog section as its body. Run right after
   update-changelog. Not for feature branches or individual PRs.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git fetch:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh release view:*), Bash(git tag:*), Bash(git push:*), Bash(gh release create:*), Read, Write
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git fetch:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(git rev-parse:*), Bash(gh release view:*), Bash(git tag:*), Bash(git push:*), Bash(gh release create:*), Read, Write
 user-invocable: true
 ---
 
@@ -84,6 +84,15 @@ Read these from the Step 1 output.
 Check that the date in the header is today's date. If it is older, the entry
 was written on an earlier day; tell the user and confirm the release is still
 the intended one before continuing.
+
+Once you have the version, confirm neither the tag nor the release already
+exists — do not rely on the "most recent tags" list alone, since the version
+you need may not be recent.
+
+```bash
+git rev-parse --verify --quiet "refs/tags/<version>" >/dev/null && echo "TAG EXISTS - stop here"
+gh release view "<version>" >/dev/null 2>&1 && echo "RELEASE EXISTS - stop here"
+```
 
 # Step 4 - confirm before changing anything
 Show the user, and wait for explicit confirmation:
