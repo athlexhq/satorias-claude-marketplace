@@ -1,0 +1,9 @@
+{
+    "name": "toolsy",
+    "displayName": "toolsy",
+    "description": "Opinionated set of handy tools to help you optimize your developer experience. Use at your own discretion. *.*",
+    "author": {
+        "name": "Dario Daić",
+        "email": "dario.daic@satorias.com"
+    }
+}
