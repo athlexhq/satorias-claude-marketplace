@@ -8,5 +8,11 @@
   },
   "description": "Agentic tools that help you manage and build well engineered software, brick by brick.",
   "$schema": "https://www.schemastore.org/claude-code-marketplace.json",
-  "plugins": []
+  "plugins": [
+    {
+      "name": "toolsy",
+      "source": "./plugins/toolsy",
+      "description": "Opinionated set of handy tools to help you optimize your developer experience. Use at your own discretion. *.*"
+    }
+  ]
 }
