@@ -4,7 +4,7 @@ description: >-
   Rewrite the description of the pull request open for the current branch, so
   it matches the code that has been written since the PR was created. Use after
   pushing new commits to a branch that already has a PR.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(sed:*), Bash(wc:*), Bash(tr:*), Read, Write
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(git ls-remote:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(sed:*), Bash(wc:*), Bash(tr:*), Read, Write
 user-invocable: true
 ---
 
@@ -36,23 +36,30 @@ fi
 echo "uncommitted changes: $([ -z "$(git status --porcelain)" ] && echo no || echo yes)"
 if git rev-parse --abbrev-ref @{u} >/dev/null 2>&1; then
   echo "unpushed commits: $(git log @{u}..HEAD --oneline | wc -l | tr -d ' ')"
+elif git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+  echo "unpushed commits: UNKNOWN - branch exists on origin but has no local upstream tracking; compare manually or set it with git push -u"
 else
   echo "unpushed commits: NO UPSTREAM - branch was never pushed"
 fi
 if git rev-parse --verify --quiet "$BASE" >/dev/null; then
   BASE_REF="$BASE"
-else
+elif git rev-parse --verify --quiet "origin/$BASE" >/dev/null; then
   BASE_REF="origin/$BASE"
+else
+  BASE_REF=""
+  echo "base ref for diff/log: NOT FOUND - neither $BASE nor origin/$BASE resolves, stop here"
 fi
-echo "base ref for diff/log: $BASE_REF"
+[ -n "$BASE_REF" ] && echo "base ref for diff/log: $BASE_REF"
 echo "--- pull request ---"
 gh pr view --json number,title,state,isDraft,url \
   -q '"#\(.number) [\(.state)\(if .isDraft then ", draft" else "" end)] \(.title)\n\(.url)"' \
   2>&1
-echo "--- commits on this branch ---"
-git log "$BASE_REF"..HEAD --oneline --no-merges
-echo "--- files changed vs $BASE_REF ---"
-git diff "$BASE_REF"...HEAD --stat
+if [ -n "$BASE_REF" ]; then
+  echo "--- commits on this branch ---"
+  git log "$BASE_REF"..HEAD --oneline --no-merges
+  echo "--- files changed vs $BASE_REF ---"
+  git diff "$BASE_REF"...HEAD --stat
+fi
 ```
 
 # Step 2 - abort conditions
@@ -60,12 +67,18 @@ Stop, report to the user, and change nothing if any of these hold.
 
  - the branch is detached HEAD (no current branch) or is the default branch
    reported in Step 1
+ - neither the local default branch nor `origin/<default-branch>` resolves
+   (Step 1 reports "base ref for diff/log: NOT FOUND")
  - no pull request exists for the branch — tell the user to create one first
  - the pull request is closed or merged
- - the branch has no upstream — it was never pushed, so nothing on it has
-   reached the pull request
+ - the branch was never pushed (Step 1 reports "NO UPSTREAM") — nothing on it
+   has reached the pull request
  - there are unpushed commits — push them first, otherwise the description
    would describe code that is not on the pull request yet
+ - Step 1 reports "UNKNOWN" (branch exists on origin, but has no local
+   upstream tracking) — do not guess; ask the user to confirm the branch is
+   fully pushed, or have them run `git push -u origin <branch>` so the next
+   run can check this itself
  - there are uncommitted changes — warn the user, since that work will not be
    reflected either, and let them decide whether to continue
 

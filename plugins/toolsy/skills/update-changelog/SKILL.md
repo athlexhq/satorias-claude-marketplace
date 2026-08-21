@@ -69,8 +69,9 @@ above only reads state — it will not fix them for you.
 
 # Step 3 - source of the entries
 Write the entries from the commit messages listed above — the commits made
-since the last release tag. Each commit is one semantical task; map it to a
-category below.
+since the last release tag. A commit is usually one semantical task, but a
+squash-merged commit can bundle several — split it into one entry per task
+and map each to a category below.
 
 If the repo's commits follow the `create-github-pr` skill's `action/tag/task`
 title format, the action tag maps directly to a category — e.g.
@@ -126,11 +127,13 @@ has said a release is one of those, and confirm before writing the header.
 
 # Step 6 - the format
 The new entry goes above the most recent released version and below the
-template block at the top of the file.
+template block at the top of the file, if one exists.
 
-The template block is a permanent fixture of the file, not an entry to fill in.
-Leave it in place, untouched, and write the new versioned entry below it. Never
-delete it.
+The template block is a permanent fixture of the file, not an entry to fill
+in. Leave it in place, untouched, and write the new versioned entry below it.
+Never delete it. If the file has no such block — e.g. this is the first entry
+ever written by this skill — write the new entry at the top of the file
+instead, above the most recent released version.
 
 This is the template, showing all categories in the order they must always
 appear: Security, System, Fix, Add, Remove, Change. Only include the
