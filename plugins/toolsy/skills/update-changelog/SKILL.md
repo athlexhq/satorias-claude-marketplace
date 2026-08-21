@@ -5,7 +5,7 @@ description: >-
   commits made
   since the last release tag. Use when cutting a release. Not for feature
   branches or individual PRs.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git describe:*), Bash(git show:*), Bash(git fetch:*), Bash(git rev-list:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(sed:*), Bash(grep:*), Read, Edit
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git log:*), Bash(git describe:*), Bash(git show:*), Bash(git fetch:*), Bash(git rev-list:*), Bash(git rev-parse:*), Bash(git symbolic-ref:*), Bash(git remote:*), Bash(gh pr view:*), Bash(sed:*), Bash(grep:*), Bash(wc:*), Bash(tr:*), Read, Edit
 user-invocable: true
 ---
 
@@ -39,14 +39,17 @@ else
   fi
   TAG=$(git describe --tags --abbrev=0 2>/dev/null)
   if [ -z "$TAG" ]; then
+    RANGE="HEAD"
     echo "last tag: none (no prior release)"
     echo "--- all commits (no prior tag) ---"
     git log --oneline --no-merges
   else
+    RANGE="$TAG..HEAD"
     echo "last tag: $TAG"
     echo "--- commits since $TAG ---"
     git log "$TAG"..HEAD --oneline --no-merges
   fi
+  echo "merge commits in range: $(git log $RANGE --merges --oneline | wc -l | tr -d ' ')"
   if [ -f CHANGELOG.md ]; then
     echo "--- versions already in CHANGELOG.md ---"
     grep -m 5 -E '^# \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md
@@ -84,10 +87,12 @@ content instead, falling back to the PR/diff as described below.
 
 Commit subjects are branch names and are often too terse to describe the change
 well. When a subject does not carry enough meaning, read the pull request
-instead. This assumes PRs are squash-merged, so a subject ending in a PR
+instead. This works when PRs are squash-merged, so a subject ending in a PR
 number — `add/integration/webhook-retries (#1481)` — is read with
-`gh pr view 1481`. If the repo merges a different way and no PR number is
-present, fall back to `git show --stat <sha>` for that commit.
+`gh pr view 1481`. Step 1's "merge commits in range" count is a signal for
+this: a non-zero count means the repo merges PRs instead of squashing them, so
+subjects won't reliably carry a PR number — go straight to `git show --stat
+<sha>` for those commits rather than looking for one.
 
 # Step 4 - categories
 There are six main categories. Every PR can contain one, or more, semantical

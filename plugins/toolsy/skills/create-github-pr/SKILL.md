@@ -193,4 +193,6 @@ Print the pull request URL that `gh pr create` returns.
 # Next step
 If new commits land on this branch before the pull request is merged, use the
 `update-github-pr` skill to refresh the description rather than editing it by
-hand.
+hand. Once the pull request is reviewed and merged into the default branch —
+outside the scope of this skill — continue the release workflow with the
+`update-changelog` skill.
